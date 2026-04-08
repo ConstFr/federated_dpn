@@ -1,4 +1,4 @@
-from data.mnist_fashionmnist import make_mnist_fashionmnist_datasets
+from datasets.mnist_fashionmnist import make_mnist_fashionmnist_datasets
 from federated.runner import run_one_shot_federated_learning
 import torch
 

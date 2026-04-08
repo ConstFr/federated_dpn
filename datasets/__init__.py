@@ -1,0 +1,2 @@
+from .mnist_fashionmnist import make_mnist_fashionmnist_datasets
+
