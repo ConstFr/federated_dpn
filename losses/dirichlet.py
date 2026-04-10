@@ -10,16 +10,16 @@ class PriorNetMixedLoss:
         self.losses = losses
         self.mixing_params = mixing_params if mixing_params is not None else [1.0] * len(self.losses)
 
-    def __call__(self, logits_list, labels_list):
-        return self.forward(logits_list, labels_list)
+    def __call__(self, alphas_list, labels_list):
+        return self.forward(alphas_list, labels_list)
 
-    def forward(self, logits_list, labels_list):
+    def forward(self, alphas_list, labels_list):
         total_loss = []
         target_concentration = 0.0
         for i, loss in enumerate(self.losses):
             if loss.target_concentration > target_concentration:
                 target_concentration = loss.target_concentration
-            total_loss.append(loss(logits_list[i], labels_list[i]) * self.mixing_params[i])
+            total_loss.append(loss(alphas_list[i], labels_list[i]) * self.mixing_params[i])
         total_loss = torch.stack(total_loss, dim=0)
         return torch.sum(total_loss) / target_concentration
 
@@ -30,8 +30,7 @@ class DirichletKLLoss:
         self.concentration = concentration
         self.reverse = reverse
 
-    def __call__(self, logits, labels, reduction="mean"):
-        alphas = torch.exp(logits)
+    def __call__(self, alphas, labels, reduction="mean"):
         return self.forward(alphas, labels, reduction=reduction)
 
     def forward(self, alphas, labels, reduction="mean"):
