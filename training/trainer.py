@@ -152,8 +152,8 @@ class TrainerWithOOD:
             cat_inputs = torch.cat([inputs, ood_inputs], dim=1).view(
                 torch.Size([2 * inputs.size()[0]]) + inputs.size()[1:]
             )
-            logits = self.model(cat_inputs).view([inputs.size()[0], -1])
-            id_outputs, ood_outputs = torch.chunk(logits, 2, dim=1)
+            alphas = self.model(cat_inputs).view([inputs.size()[0], -1])
+            id_outputs, ood_outputs = torch.chunk(alphas, 2, dim=1)
 
             loss = self.criterion((id_outputs, ood_outputs), (labels, None))
             assert torch.all(torch.isfinite(loss)).item()
@@ -166,10 +166,11 @@ class TrainerWithOOD:
             self.optimizer.step()
             self.steps += 1
 
-            id_alpha_0 += torch.mean(torch.sum(torch.exp(id_outputs), dim=1)).item()
-            ood_alpha_0 += torch.mean(torch.sum(torch.exp(ood_outputs), dim=1)).item()
+            id_alpha_0 += torch.mean(torch.sum(id_outputs, dim=1)).item()
+            ood_alpha_0 += torch.mean(torch.sum(ood_outputs, dim=1)).item()
 
-            probs = F.softmax(id_outputs, dim=1)
+            id_outputs_0 = torch.sum(id_outputs, dim=1, keepdim=True)
+            probs = id_outputs / id_outputs_0
             accuracy = calc_accuracy_torch(probs, labels, self.device).item()
             accuracies += accuracy
 
@@ -203,7 +204,7 @@ class TrainerWithOOD:
 
     def test(self, time):
         id_loss, ood_loss, accuracy = 0.0, 0.0, 0.0
-        id_logits, ood_logits = [], []
+        id_alphas_all, ood_alphas_all = [], []
         self.model.eval()
         id_alpha_0, ood_alpha_0 = 0.0, 0.0
         with torch.no_grad():
@@ -217,16 +218,19 @@ class TrainerWithOOD:
                     )
                 id_outputs = self.model(id_inputs)
                 ood_outputs = self.model(ood_inputs)
-                probs = F.softmax(id_outputs, dim=1)
+
+                id_alpha_0 += torch.mean(torch.sum(id_outputs, dim=1)).item()
+                ood_alpha_0 += torch.mean(torch.sum(ood_outputs, dim=1)).item()
+
+                id_outputs_0 = torch.sum(id_outputs, dim=1, keepdim=True)
+                probs = id_outputs / id_outputs_0
 
                 accuracy += calc_accuracy_torch(probs, labels).item()
                 id_loss += self.id_criterion(id_outputs, labels).item()
                 ood_loss += self.ood_criterion(ood_outputs, None).item()
 
-                id_alpha_0 += torch.mean(torch.sum(torch.exp(id_outputs), dim=1)).item()
-                ood_alpha_0 += torch.mean(torch.sum(torch.exp(ood_outputs), dim=1)).item()
-                id_logits.append(id_outputs.cpu().numpy())
-                ood_logits.append(ood_outputs.cpu().numpy())
+                id_alphas_all.append(id_outputs.cpu().numpy())
+                ood_alphas_all.append(ood_outputs.cpu().numpy())
 
         id_alpha_0 = id_alpha_0 / len(self.testloader)
         ood_alpha_0 = ood_alpha_0 / len(self.test_oodloader)
@@ -234,13 +238,14 @@ class TrainerWithOOD:
         ood_loss = ood_loss / len(self.testloader)
         accuracy = accuracy / len(self.testloader)
 
-        id_logits = np.concatenate(id_logits, axis=0)
-        ood_logits = np.concatenate(ood_logits, axis=0)
-        logits = np.concatenate([id_logits, ood_logits], axis=0)
-        uncertainties = dirichlet_prior_network_uncertainty(logits)["mutual_information"]
+        id_alphas_all = np.concatenate(id_alphas_all, axis=0)
+        ood_alphas_all = np.concatenate(ood_alphas_all, axis=0)
+        alphas_all = np.concatenate([id_alphas_all, ood_alphas_all], axis=0)
+        
+        uncertainties = dirichlet_prior_network_uncertainty(alphas_all)["mutual_information"]
 
-        in_domain = np.zeros(shape=[id_logits.shape[0]], dtype=np.int32)
-        ood_domain = np.ones(shape=[ood_logits.shape[0]], dtype=np.int32)
+        in_domain = np.zeros(shape=[id_alphas_all.shape[0]], dtype=np.int32)
+        ood_domain = np.ones(shape=[ood_alphas_all.shape[0]], dtype=np.int32)
         domain_labels = np.concatenate([in_domain, ood_domain], axis=0)
         auc = roc_auc_score(domain_labels, uncertainties)
 

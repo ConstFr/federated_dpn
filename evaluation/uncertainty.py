@@ -2,9 +2,7 @@ import numpy as np
 from scipy.special import digamma, gammaln
 
 
-def dirichlet_prior_network_uncertainty(logits, epsilon=1e-10):
-    logits = np.asarray(logits, dtype=np.float64)
-    alphas = np.exp(logits)
+def dirichlet_prior_network_uncertainty(alphas, epsilon=1e-10):
     alpha0 = np.sum(alphas, axis=1, keepdims=True)
     probs = alphas / alpha0
 

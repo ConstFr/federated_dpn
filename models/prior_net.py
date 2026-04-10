@@ -37,10 +37,10 @@ class PriorNet(nn.Module):
         self.model = model
 
     def forward(self, x):
-        return self.model(x)
+        return 1 + F.softplus(self.model(x))
 
     def alphas(self, x):
-        return torch.exp(self.forward(x))
+        return self.forward(x)
 
     def mutual_information(self, x):
         alphas = self.alphas(x)
@@ -51,7 +51,10 @@ class PriorNet(nn.Module):
         return entropy_of_exp - expected_entropy
 
     def entropy_of_expected(self, x):
-        probs = F.softmax(self.model(x), dim=1)
+        # probs = F.softmax(self.model(x), dim=1)
+        alphas = self.alphas(x)
+        alpha0 = torch.sum(alphas, dim=1, keepdim=True)
+        probs = alphas / alpha0
         return categorical_entropy_torch(probs)
 
     def expected_entropy(self, x):
@@ -84,8 +87,7 @@ class PriorNet(nn.Module):
         )
 
     @staticmethod
-    def uncertainty_metrics(logits):
-        alphas = torch.exp(logits)
+    def uncertainty_metrics(alphas):
         alpha0 = torch.sum(alphas, dim=1, keepdim=True)
         probs = alphas / alpha0
         epkl = (alphas.size()[1] - 1.0) / alphas
@@ -118,7 +120,7 @@ class AggregatedPriorNet(nn.Module):
         self.eps = eps
 
     def aggregated_alpha(self, x):
-        client_alphas = [torch.exp(model(x)) for model in self.client_models]
+        client_alphas = [model(x) for model in self.client_models]
         stacked = torch.stack(client_alphas, dim=0)
 
         aggregated_alpha = stacked.sum(dim=0) - (self.num_clients - 1)
@@ -127,7 +129,7 @@ class AggregatedPriorNet(nn.Module):
 
     def forward(self, x):
         aggregated_alpha = self.aggregated_alpha(x)
-        return torch.log(aggregated_alpha)
+        return aggregated_alpha
 
     def alphas(self, x):
         return self.aggregated_alpha(x)

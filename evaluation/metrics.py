@@ -17,7 +17,7 @@ def evaluate_accuracy(
     device: torch.device = torch.device("cuda"),
 ) -> float:
     id_loss, ood_loss, accuracy = 0.0, 0.0, 0.0
-    id_logits, ood_logits = [], []
+    id_alphas_all, ood_alphas_all = [], []
     model.eval()
 
     testloader = DataLoader(val_in_dataset, batch_size=64, shuffle=False)
@@ -35,15 +35,17 @@ def evaluate_accuracy(
                 id_inputs, labels, ood_inputs = map(lambda x: x.to(device), (id_inputs, labels, ood_inputs))
             id_outputs = model(id_inputs)
             ood_outputs = model(ood_inputs)
-            probs = F.softmax(id_outputs, dim=1)
+
+            id_outputs_0 = torch.sum(id_outputs, dim=1, keepdim=True)
+            probs = id_outputs / id_outputs_0
 
             accuracy += calc_accuracy_torch(probs, labels).item()
             id_loss += id_criterion(id_outputs, labels).item()
             ood_loss += ood_criterion(ood_outputs, None).item()
-            id_alpha_0 += torch.mean(torch.sum(torch.exp(id_outputs), dim=1)).item()
-            ood_alpha_0 += torch.mean(torch.sum(torch.exp(ood_outputs), dim=1)).item()
-            id_logits.append(id_outputs.cpu().numpy())
-            ood_logits.append(ood_outputs.cpu().numpy())
+            id_alpha_0 += torch.mean(torch.sum(id_outputs, dim=1)).item()
+            ood_alpha_0 += torch.mean(torch.sum(ood_outputs, dim=1)).item()
+            id_alphas_all.append(id_outputs.cpu().numpy())
+            ood_alphas_all.append(ood_outputs.cpu().numpy())
 
     id_alpha_0 = id_alpha_0 / len(testloader)
     ood_alpha_0 = ood_alpha_0 / len(test_oodloader)
@@ -51,13 +53,13 @@ def evaluate_accuracy(
     ood_loss = ood_loss / len(test_oodloader)
     accuracy = accuracy / len(testloader)
 
-    id_logits = np.concatenate(id_logits, axis=0)
-    ood_logits = np.concatenate(ood_logits, axis=0)
-    logits = np.concatenate([id_logits, ood_logits], axis=0)
-    uncertainties = dirichlet_prior_network_uncertainty(logits)["mutual_information"]
+    id_alphas_all = np.concatenate(id_alphas_all, axis=0)
+    ood_alphas_all = np.concatenate(ood_alphas_all, axis=0)
+    alphas_all = np.concatenate([id_alphas_all, ood_alphas_all], axis=0)
+    uncertainties = dirichlet_prior_network_uncertainty(alphas_all)["mutual_information"]
 
-    in_domain = np.zeros(shape=[id_logits.shape[0]], dtype=np.int32)
-    ood_domain = np.ones(shape=[ood_logits.shape[0]], dtype=np.int32)
+    in_domain = np.zeros(shape=[id_alphas_all.shape[0]], dtype=np.int32)
+    ood_domain = np.ones(shape=[ood_alphas_all.shape[0]], dtype=np.int32)
     domain_labels = np.concatenate([in_domain, ood_domain], axis=0)
     auc = roc_auc_score(domain_labels, uncertainties)
 
