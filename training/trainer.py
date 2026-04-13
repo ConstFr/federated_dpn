@@ -277,15 +277,15 @@ class TrainerWithOOD:
 def calc_accuracy_torch(y_probs, y_true, device=None, weights=None):
     if weights is None:
         if device is None:
-            return torch.mean((torch.argmax(y_probs, dim=1) == y_true).to(dtype=torch.float64))
-        return torch.mean((torch.argmax(y_probs, dim=1) == y_true).to(device, torch.float64))
+            return torch.mean((torch.argmax(y_probs, dim=1) == y_true).to(dtype=torch.float32))
+        return torch.mean((torch.argmax(y_probs, dim=1) == y_true).to(device, torch.float32))
 
     if device is None:
-        weights.to(dtype=torch.float64)
-        return torch.mean(weights * (torch.argmax(y_probs, dim=1) == y_true).to(dtype=torch.float64))
+        weights.to(dtype=torch.float32)
+        return torch.mean(weights * (torch.argmax(y_probs, dim=1) == y_true).to(dtype=torch.float32))
 
-    weights.to(device=device, dtype=torch.float64)
+    weights.to(device=device, dtype=torch.float32)
     return torch.mean(
-        weights * (torch.argmax(y_probs, dim=1) == y_true).to(device=device, dtype=torch.float64)
+        weights * (torch.argmax(y_probs, dim=1) == y_true).to(device=device, dtype=torch.float32)
     )
 

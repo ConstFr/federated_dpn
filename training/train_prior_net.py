@@ -43,8 +43,8 @@ def train_dpn(
     if checkpoint_path is None:
         checkpoint_path = model_dir / "model"
 
-    if not torch.cuda.is_available():
-        raise RuntimeError("CUDA is required but no GPU is available.")
+    if not torch.cuda.is_available() and not torch.backends.mps.is_available():
+        raise RuntimeError("CUDA or MPS is required but no GPU is available.")
 
     model.to(device)
 
