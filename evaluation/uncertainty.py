@@ -20,7 +20,7 @@ def dirichlet_prior_network_uncertainty(alphas, epsilon=1e-10):
         axis=1,
         keepdims=True,
     ) - gammaln(alpha0)
-
+    
     return {
         "confidence": conf,
         "entropy_of_expected": entropy_of_exp,

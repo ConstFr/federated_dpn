@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -8,6 +10,8 @@ from torch.utils.data import DataLoader
 from evaluation.uncertainty import dirichlet_prior_network_uncertainty
 from losses.dirichlet import DirichletKLLoss
 from training.trainer import calc_accuracy_torch
+
+logger = logging.getLogger(__name__)
 
 
 def evaluate_accuracy(
@@ -63,13 +67,12 @@ def evaluate_accuracy(
     domain_labels = np.concatenate([in_domain, ood_domain], axis=0)
     auc = roc_auc_score(domain_labels, uncertainties)
 
-    print(
+    logger.info(
         f"Test ID Loss: {np.round(id_loss, 1)}; "
         f"Test OOD Loss: {np.round(ood_loss, 1)}; "
         f"Test Error: {np.round(100.0 * (1.0 - accuracy), 1)}%; "
         f"Test ID precision: {np.round(id_alpha_0, 1)}; "
         f"Test OOD precision: {np.round(ood_alpha_0, 1)}; "
-        f"Test AUROC: {np.round(100.0 * auc, 1)}; "
+        f"Test AUROC: {np.round(100.0 * auc, 1)}"
     )
     return accuracy * 100.0
-

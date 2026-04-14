@@ -61,7 +61,7 @@ class PriorNet(nn.Module):
         alphas = self.alphas(x)
         return self.expected_entropy_from_alphas(alphas)
 
-    def diffenrential_entropy(self, x):
+    def differential_entropy(self, x):
         alphas = self.alphas(x)
         alpha0 = torch.sum(alphas, dim=1, keepdim=True)
         return torch.sum(
@@ -86,54 +86,15 @@ class PriorNet(nn.Module):
             dim=1,
         )
 
-    @staticmethod
-    def uncertainty_metrics(alphas):
-        alpha0 = torch.sum(alphas, dim=1, keepdim=True)
-        probs = alphas / alpha0
-        epkl = (alphas.size()[1] - 1.0) / alphas
-        dentropy = torch.sum(
-            torch.lgamma(alphas) - (alphas - 1) * (torch.digamma(alphas) - torch.digamma(alpha0)),
-            dim=1,
-        ) - torch.lgamma(alpha0)
-        conf = torch.max(probs, dim=1)
-        expected_entropy = -torch.sum(
-            (alphas / alpha0) * (torch.digamma(alphas + 1) - torch.digamma(alpha0 + 1)),
-            dim=1,
-        )
-        entropy_of_exp = categorical_entropy_torch(probs)
-        mutual_info = entropy_of_exp - expected_entropy
+    def uncertainty_metrics(self, x):
         return {
-            "confidence": conf,
-            "entropy_of_expected": entropy_of_exp,
-            "expected_entropy": expected_entropy,
-            "mutual_information": mutual_info,
-            "EPKL": epkl,
-            "differential_entropy": torch.squeeze(dentropy),
+            "confidence": self.confidence(x),
+            "entropy_of_expected": self.entropy_of_expected(x),
+            "expected_entropy": self.expected_entropy(x),
+            "mutual_information": self.mutual_information(x),
+            "EPKL": self.epkl(x),
+            "differential_entropy": self.differential_entropy(x),
         }
-
-
-class AggregatedPriorNet(nn.Module):
-    def __init__(self, client_models, eps=1e-8):
-        super().__init__()
-        self.client_models = nn.ModuleList(client_models)
-        self.num_clients = len(client_models)
-        self.eps = eps
-
-    def aggregated_alpha(self, x):
-        client_alphas = [model(x) for model in self.client_models]
-        stacked = torch.stack(client_alphas, dim=0)
-
-        aggregated_alpha = stacked.sum(dim=0) - (self.num_clients - 1)
-        aggregated_alpha = torch.clamp(aggregated_alpha, min=self.eps)
-        return aggregated_alpha
-
-    def forward(self, x):
-        aggregated_alpha = self.aggregated_alpha(x)
-        return aggregated_alpha
-
-    def alphas(self, x):
-        return self.aggregated_alpha(x)
-
 
 
 def categorical_entropy_torch(probs, dim=1, keepdim=False):

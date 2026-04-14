@@ -1,0 +1,8 @@
+num_clients: 3
+local_epochs: 2
+batch_size: 32
+lr: 0.001
+
+train_subset_size: 15000
+
+aggregation_type: "hard_majority_vote"

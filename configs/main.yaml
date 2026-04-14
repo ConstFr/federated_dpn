@@ -1,0 +1,15 @@
+defaults:
+  - experiment: one_shot
+  - _self_
+
+device: auto
+
+dataset:
+  name: mnist_fashionmnist
+  data_path: ./data
+  normalize: true
+
+hydra:
+  run:
+    dir: .
+  output_subdir: null

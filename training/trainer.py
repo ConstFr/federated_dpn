@@ -1,4 +1,5 @@
 import math
+import logging
 import os
 import time
 from typing import Any, Dict
@@ -12,6 +13,8 @@ from torch.nn.utils import clip_grad_norm_
 from torch.utils.data import DataLoader
 
 from evaluation.uncertainty import dirichlet_prior_network_uncertainty
+
+logger = logging.getLogger(__name__)
 
 
 class TrainerWithOOD:
@@ -40,7 +43,11 @@ class TrainerWithOOD:
         checkpoint_steps=0,
     ):
         assert isinstance(model, nn.Module)
-        print(f"{len(train_dataset)=}, {len(ood_dataset)=}, {len(test_dataset)=}, {len(test_ood_dataset)=}")
+        logger.info(
+            f"Dataset sizes: train={len(train_dataset)} "
+            f"ood_train={len(ood_dataset)} test={len(test_dataset)} "
+            f"test_ood={len(test_ood_dataset)}"
+        )
         assert len(train_dataset) == len(ood_dataset)
         assert len(test_dataset) == len(test_ood_dataset)
 
@@ -112,7 +119,7 @@ class TrainerWithOOD:
         if load_scheduler_state:
             self.scheduler.load_state_dict(checkpoint["lr_scheduler_state_dict"])
 
-        print(f"Model restored from checkpoint {checkpoint_path}")
+        logger.info(f"Model restored from checkpoint {checkpoint_path}")
 
     def train(self, n_epochs=None, n_iter=None, resume=False):
         init_epoch = 0
@@ -126,7 +133,7 @@ class TrainerWithOOD:
             init_epoch = math.floor(self.steps / len(self.trainloader))
 
         for epoch in range(init_epoch, n_epochs):
-            print(f"Training epoch: {epoch + 1} / {n_epochs}")
+            logger.info(f"Training epoch: {epoch + 1} / {n_epochs}")
             start = time.time()
             self._train_single_epoch()
             self.test(time=time.time() - start)
@@ -185,22 +192,13 @@ class TrainerWithOOD:
         id_alpha_0 /= len(self.trainloader)
         ood_alpha_0 /= len(self.trainloader)
 
-        print(
+        logger.info(
             f"Train ID Loss: {np.round(id_loss, 1)}; "
             f"Train OOD Loss: {np.round(ood_loss, 1)}; "
             f"Train Error: {np.round(100.0 * (1.0 - accuracies), 1)}; "
             f"Train ID precision: {np.round(id_alpha_0, 1)}; "
-            f"Train OOD precision: {np.round(ood_alpha_0, 1)}"
+            f"Train OOD precision: {np.round(ood_alpha_0, 1)}\n"
         )
-
-        with open("./LOG.txt", "a") as f:
-            f.write(
-                f"Train ID Loss: {np.round(id_loss, 1)}; "
-                f"Train OOD Loss: {np.round(ood_loss, 1)}; "
-                f"Train Error: {np.round(100.0 * (1.0 - accuracies), 1)}; "
-                f"Train ID precision: {np.round(id_alpha_0, 1)}; "
-                f"Train OOD precision: {np.round(ood_alpha_0, 1)}; "
-            )
 
     def test(self, time):
         id_loss, ood_loss, accuracy = 0.0, 0.0, 0.0
@@ -249,26 +247,15 @@ class TrainerWithOOD:
         domain_labels = np.concatenate([in_domain, ood_domain], axis=0)
         auc = roc_auc_score(domain_labels, uncertainties)
 
-        print(
+        logger.info(
             f"Test ID Loss: {np.round(id_loss, 1)}; "
             f"Test OOD Loss: {np.round(ood_loss, 1)}; "
             f"Test Error: {np.round(100.0 * (1.0 - accuracy), 1)}%; "
             f"Test ID precision: {np.round(id_alpha_0, 1)}; "
             f"Test OOD precision: {np.round(ood_alpha_0, 1)}; "
             f"Test AUROC: {np.round(100.0 * auc, 1)}; "
-            f"Time Per Epoch: {np.round(time / 60.0, 1)} min"
+            f"Time Per Epoch: {np.round(time / 60.0, 1)} min\n"
         )
-
-        with open("./LOG.txt", "a") as f:
-            f.write(
-                f"Test ID Loss: {np.round(id_loss, 1)}; "
-                f"Test OOD Loss: {np.round(ood_loss, 1)}; "
-                f"Test Error: {np.round(100.0 * (1.0 - accuracy), 1)}; "
-                f"Test ID precision: {np.round(id_alpha_0, 1)}; "
-                f"Test OOD precision: {np.round(ood_alpha_0, 1)}; "
-                f"Test AUROC: {np.round(100.0 * auc, 1)}; "
-                f"Time Per Epoch: {np.round(time / 60.0, 1)} min.\n"
-            )
         self.test_loss.append(id_loss)
         self.test_accuracy.append(accuracy)
         self.test_eval_steps.append(self.steps)
@@ -288,4 +275,3 @@ def calc_accuracy_torch(y_probs, y_true, device=None, weights=None):
     return torch.mean(
         weights * (torch.argmax(y_probs, dim=1) == y_true).to(device=device, dtype=torch.float32)
     )
-
