@@ -31,6 +31,7 @@ def local_train(
     batch_size: int = 32,
     lr: float = 1e-3,
     device: torch.device = torch.device("cuda"),
+    test: bool = False
 ):
     model.train()
     return train_dpn(
@@ -43,6 +44,7 @@ def local_train(
         lr=lr,
         batch_size=batch_size,
         device=device,
+        test=test
     )
 
 
@@ -91,6 +93,7 @@ def run_one_shot_federated_learning(
             batch_size=batch_size,
             lr=lr,
             device=device,
+            test=True
         )
 
         client_models.append(new_state)
@@ -155,6 +158,7 @@ def run_fedavg_federated_learning(
                 batch_size=batch_size,
                 lr=lr,
                 device=device,
+                test=False
             )
 
             client_states.append(new_state.state_dict())

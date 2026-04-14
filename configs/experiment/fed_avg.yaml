@@ -7,7 +7,4 @@ lr: 0.001
 
 train_subset_size: 15000
 
-aggregation_type: "uncertainty"
-aggregation_uncertainty_measure: "confidence"
-
 random_seed: 337

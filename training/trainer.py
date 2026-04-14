@@ -121,7 +121,7 @@ class TrainerWithOOD:
 
         logger.info(f"Model restored from checkpoint {checkpoint_path}")
 
-    def train(self, n_epochs=None, n_iter=None, resume=False):
+    def train(self, n_epochs=None, n_iter=None, resume=False, test=False):
         init_epoch = 0
         if n_epochs is None:
             assert isinstance(n_iter, int)
@@ -137,11 +137,11 @@ class TrainerWithOOD:
             logger.info(f"Training epoch: {epoch + 1} / {n_epochs}")
             start = time.time()
             self._train_single_epoch()
-            if epoch + 1 == n_epochs:
+            if epoch + 1 == n_epochs and test:
                 logger.info("=" * 75)
                 logger.info("Final evaluation")
                 logger.info("=" * 75)
-            self.test(time=time.time() - start)
+                self.test(time=time.time() - start)
             self.scheduler.step()
 
     def _train_single_epoch(self):

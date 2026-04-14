@@ -31,6 +31,7 @@ def train_dpn(
     checkpoint_path=None,
     id_ratio=1.0,
     device="cuda",
+    test: bool = False
 ):
     del data_path, optimizer
 
@@ -84,6 +85,6 @@ def train_dpn(
         clip_norm=clip_norm,
     )
 
-    trainer.train(n_epochs)
+    trainer.train(n_epochs, test=test)
     return trainer.model
 
