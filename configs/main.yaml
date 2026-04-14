@@ -1,5 +1,5 @@
 defaults:
-  - experiment: hard_majority_voting
+  - experiment: fed_avg
   - _self_
 
 device: auto

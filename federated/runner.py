@@ -99,3 +99,85 @@ def run_one_shot_federated_learning(
     logger.info(f"Evaluating aggregated model")
     test_accuracy = evaluate_accuracy(aggregated_model, val_in_dataset, val_ood_dataset, device=device)
     logger.info(f"Validation accuracy = {test_accuracy:.1f}%")
+
+
+def run_fedavg_federated_learning(
+    in_dataset,
+    ood_dataset,
+    val_in_dataset,
+    val_ood_dataset,
+    num_clients: int = 10,
+    num_rounds: int = 10,
+    local_epochs: int = 1,
+    batch_size: int = 128,
+    lr: float = 1e-3,
+    device: torch.device = torch.device("cuda"),
+):
+    logger.info(
+        f"Starting FedAvg federated learning with num_clients={num_clients} "
+        f"num_rounds={num_rounds} local_epochs={local_epochs} "
+        f"batch_size={batch_size} lr={lr}\n"
+    )
+
+    client_indices = partition_data_iid(in_dataset, num_clients)
+
+    global_cnn = SimpleCNN().to(device)
+    global_model = PriorNet(global_cnn).to(device)
+
+    for round_id in range(num_rounds):
+        logger.info(f"Starting round {round_id + 1}/{num_rounds}")
+
+        client_states = []
+
+        for client_id in range(num_clients):
+            logger.info(
+                f"Training client {client_id + 1}/{num_clients} with "
+                f"{len(client_indices[client_id])} in-distribution samples and "
+                f"{len(client_indices[client_id])} OOD samples"
+            )
+
+            client_in_dataset = Subset(in_dataset, client_indices[client_id])
+            client_ood_dataset = Subset(ood_dataset, client_indices[client_id])
+
+            local_cnn = SimpleCNN().to(device)
+            local_model = PriorNet(local_cnn).to(device)
+
+            # Initialize local model from current global model
+            local_model.load_state_dict(global_model.state_dict())
+
+            new_state = local_train(
+                local_model,
+                client_in_dataset,
+                val_in_dataset,
+                client_ood_dataset,
+                val_ood_dataset,
+                epochs=local_epochs,
+                batch_size=batch_size,
+                lr=lr,
+                device=device,
+            )
+
+            client_states.append(new_state.state_dict())
+
+        # Standard FedAvg: uniform averaging of client parameters
+        avg_state = {}
+        for key in client_states[0].keys():
+            avg_state[key] = torch.stack(
+                [client_state[key].float().to(device) for client_state in client_states],
+                dim=0,
+            ).mean(dim=0)
+
+        global_model.load_state_dict(avg_state)
+
+    logger.info("Evaluating global model")
+    test_accuracy = evaluate_accuracy(
+        global_model,
+        val_in_dataset,
+        val_ood_dataset,
+        device=device,
+    )
+    logger.info(
+        f"Round {round_id + 1}/{num_rounds} validation accuracy = {test_accuracy:.1f}%"
+    )
+
+    return global_model

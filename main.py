@@ -10,6 +10,8 @@ import hydra
 
 from datasets.mnist_fashionmnist import make_mnist_fashionmnist_datasets
 from federated.runner import run_one_shot_federated_learning
+from federated.runner import run_fedavg_federated_learning
+
 
 
 def resolve_device(device_config: str) -> str:
@@ -70,20 +72,39 @@ def main(cfg):
     device = resolve_device(cfg.device)
     logger.info(f"Resolved execution device={device}")
 
-    # Run federated learning
-    run_one_shot_federated_learning(
-        in_train_dataset,
-        ood_train_dataset,
-        in_val_dataset,
-        ood_val_dataset,
-        num_clients=cfg.experiment.num_clients,
-        local_epochs=cfg.experiment.local_epochs,
-        batch_size=cfg.experiment.batch_size,
-        lr=cfg.experiment.lr,
-        aggregation_type=cfg.experiment.aggregation_type,
-        aggregation_uncertainty_measure=getattr(cfg.experiment, "aggregation_uncertainty_measure", "none"),
-        device=device,
-    )
+    if getattr(cfg.experiment, "federated_learning_type", "one_shot") == "one_shot":
+        # Run federated learning
+        run_one_shot_federated_learning(
+            in_train_dataset,
+            ood_train_dataset,
+            in_val_dataset,
+            ood_val_dataset,
+            num_clients=cfg.experiment.num_clients,
+            local_epochs=cfg.experiment.local_epochs,
+            batch_size=cfg.experiment.batch_size,
+            lr=cfg.experiment.lr,
+            aggregation_type=cfg.experiment.aggregation_type,
+            aggregation_uncertainty_measure=getattr(cfg.experiment, "aggregation_uncertainty_measure", "none"),
+            device=device,
+        )
+    elif getattr(cfg.experiment, "federated_learning_type", "one_shot") == "fed_avg":
+        if getattr(cfg.experiment, "num_rounds", "none") == "none":
+            raise RuntimeError((
+                    "Variable num_rounds describing number of rounds for federated learning is missing. "
+                    "Precise num_rounds in the configuration."))
+
+        run_fedavg_federated_learning(
+            in_train_dataset,
+            ood_train_dataset,
+            in_val_dataset,
+            ood_val_dataset,
+            num_clients=cfg.experiment.num_clients,
+            num_rounds=cfg.experiment.num_rounds,
+            local_epochs=cfg.experiment.local_epochs,
+            batch_size=cfg.experiment.batch_size,
+            lr=cfg.experiment.lr,
+            device=device,
+        )
 
 
 if __name__ == "__main__":
