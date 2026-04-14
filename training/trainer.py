@@ -133,9 +133,14 @@ class TrainerWithOOD:
             init_epoch = math.floor(self.steps / len(self.trainloader))
 
         for epoch in range(init_epoch, n_epochs):
+            logger.info("=" * 75)
             logger.info(f"Training epoch: {epoch + 1} / {n_epochs}")
             start = time.time()
             self._train_single_epoch()
+            if epoch + 1 == n_epochs:
+                logger.info("=" * 75)
+                logger.info("Final evaluation")
+                logger.info("=" * 75)
             self.test(time=time.time() - start)
             self.scheduler.step()
 
@@ -193,10 +198,10 @@ class TrainerWithOOD:
         ood_alpha_0 /= len(self.trainloader)
 
         logger.info(
-            f"Train ID Loss: {np.round(id_loss, 1)}; "
-            f"Train OOD Loss: {np.round(ood_loss, 1)}; "
-            f"Train Error: {np.round(100.0 * (1.0 - accuracies), 1)}; "
-            f"Train ID precision: {np.round(id_alpha_0, 1)}; "
+            f"Train Accuracy: {np.round(100.0 * (accuracies), 1)}%\n"
+            f"Train ID Loss: {np.round(id_loss, 1)} "
+            f"Train OOD Loss: {np.round(ood_loss, 1)} "
+            f"Train ID precision: {np.round(id_alpha_0, 1)} "
             f"Train OOD precision: {np.round(ood_alpha_0, 1)}\n"
         )
 
@@ -248,12 +253,12 @@ class TrainerWithOOD:
         auc = roc_auc_score(domain_labels, uncertainties)
 
         logger.info(
-            f"Test ID Loss: {np.round(id_loss, 1)}; "
-            f"Test OOD Loss: {np.round(ood_loss, 1)}; "
-            f"Test Error: {np.round(100.0 * (1.0 - accuracy), 1)}%; "
-            f"Test ID precision: {np.round(id_alpha_0, 1)}; "
-            f"Test OOD precision: {np.round(ood_alpha_0, 1)}; "
-            f"Test AUROC: {np.round(100.0 * auc, 1)}; "
+            f"Test Accuracy: {np.round(100.0 * (accuracy), 1)}%\n"
+            f"Test ID Loss: {np.round(id_loss, 1)} "
+            f"Test OOD Loss: {np.round(ood_loss, 1)} "
+            f"Test ID precision: {np.round(id_alpha_0, 1)} "
+            f"Test OOD precision: {np.round(ood_alpha_0, 1)} "
+            f"Test AUROC: {np.round(100.0 * auc, 1)} "
             f"Time Per Epoch: {np.round(time / 60.0, 1)} min\n"
         )
         self.test_loss.append(id_loss)

@@ -5,4 +5,4 @@ lr: 0.001
 
 train_subset_size: 15000
 
-aggregation_type: "majority_vote"
+aggregation_type: "majority_voting"

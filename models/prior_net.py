@@ -75,7 +75,7 @@ class PriorNet(nn.Module):
         return alphas.size()[1] / alpha0
 
     def confidence(self, x):
-        return torch.max(F.softmax(self.forward(x)), dim=1)
+        return torch.max(F.softmax(self.forward(x)), dim=1).values
 
     @staticmethod
     def expected_entropy_from_alphas(alphas, alpha0=None):

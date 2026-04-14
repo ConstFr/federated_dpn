@@ -68,11 +68,11 @@ def evaluate_accuracy(
     auc = roc_auc_score(domain_labels, uncertainties)
 
     logger.info(
-        f"Test ID Loss: {np.round(id_loss, 1)}; "
-        f"Test OOD Loss: {np.round(ood_loss, 1)}; "
-        f"Test Error: {np.round(100.0 * (1.0 - accuracy), 1)}%; "
-        f"Test ID precision: {np.round(id_alpha_0, 1)}; "
-        f"Test OOD precision: {np.round(ood_alpha_0, 1)}; "
-        f"Test AUROC: {np.round(100.0 * auc, 1)}"
+        f"Test Accuracy: {np.round(100.0 * (accuracy), 1)}%\n"
+        f"Test ID Loss: {np.round(id_loss, 1)} "
+        f"Test OOD Loss: {np.round(ood_loss, 1)} "
+        f"Test ID precision: {np.round(id_alpha_0, 1)} "
+        f"Test OOD precision: {np.round(ood_alpha_0, 1)} "
+        f"Test AUROC: {np.round(100.0 * auc, 1)}\n"
     )
     return accuracy * 100.0
