@@ -60,8 +60,8 @@ def train_dpn(
     )
     criterion = PriorNetMixedLoss([id_criterion, ood_criterion], mixing_params=[1.0, gamma])
 
-    optimizer_cls = optim.SGD
-    optimizer_params = {"lr": lr, "momentum": 0.9, "weight_decay": weight_decay}
+    optimizer_cls = optim.AdamW
+    optimizer_params = {"lr": lr, "weight_decay": weight_decay}
     adjusted_lrc = [int(m / id_ratio) for m in lrc]
 
     trainer = TrainerWithOOD(

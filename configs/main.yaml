@@ -1,5 +1,5 @@
 defaults:
-  - experiment: one_shot
+  - experiment: hard_majority_voting
   - _self_
 
 device: auto

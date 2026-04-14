@@ -6,6 +6,7 @@ from models.aggregated_prior_net import (
     UncertaintyAggregatedPriorNet, 
     MajorityVoteAggregatedPriorNet,
     HardMajorityVoteAggregatedPriorNet,
+    MostCertainAggregatedPriorNet
 )
 
 logger = logging.getLogger(__name__)
@@ -25,4 +26,6 @@ def dpn_aggregate(client_models, aggregation_type="simple", aggregation_uncertai
         return MajorityVoteAggregatedPriorNet(client_models).to(device)
     elif aggregation_type == "hard_majority_voting":
         return HardMajorityVoteAggregatedPriorNet(client_models).to(device)
+    elif aggregation_type == "most_certain":
+        return MostCertainAggregatedPriorNet(client_models).to(device)
     raise NotImplementedError(f"Not implemented aggregation type: {aggregation_type}")
