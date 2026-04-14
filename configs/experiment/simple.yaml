@@ -6,3 +6,5 @@ lr: 0.001
 train_subset_size: 15000
 
 aggregation_type: "simple"
+
+random_seed: 337

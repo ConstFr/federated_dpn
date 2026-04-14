@@ -7,3 +7,5 @@ train_subset_size: 15000
 
 aggregation_type: "most_certain"
 aggregation_uncertainty_measure: "expected_entropy"
+
+random_seed: 337

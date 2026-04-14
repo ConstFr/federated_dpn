@@ -1,8 +1,11 @@
 import logging
 from datetime import datetime
+import os
 from pathlib import Path
+import random
 
 import torch
+import numpy as np
 import hydra
 
 from datasets.mnist_fashionmnist import make_mnist_fashionmnist_datasets
@@ -42,11 +45,23 @@ def configure_logging() -> Path:
     return log_path
 
 
+def seed_everything(seed: int):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+
+
 @hydra.main(version_base=None, config_path="configs", config_name="main")
 def main(cfg):
     log_path = configure_logging()
     logger = logging.getLogger(__name__)
     logger.info(f"Logging to {log_path}")
+
+    random_seed = cfg.experiment.random_seed
+    seed_everything(random_seed)
 
     # Load datasets
     in_train_dataset, in_val_dataset, ood_train_dataset, ood_val_dataset = \
