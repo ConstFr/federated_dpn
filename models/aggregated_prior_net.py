@@ -34,8 +34,7 @@ class SimpleAggregatedPriorNet(AggregatedPriorNet):
 
 
 class UncertaintyAggregatedPriorNet(AggregatedPriorNet):
-    def __init__(self, client_models, uncertainty_metric="mutual_information", eps=1e-8):
-        print(uncertainty_metric)
+    def __init__(self, client_models, uncertainty_metric="none", eps=1e-8):
         super().__init__(client_models, eps)
         self.uncertainty_metric = uncertainty_metric
 
@@ -47,7 +46,7 @@ class UncertaintyAggregatedPriorNet(AggregatedPriorNet):
         stacked_alphas = torch.stack(clients_alphas, dim=0)
 
         weights = F.softmin(stacked_uncertainty, dim=0).unsqueeze(-1)
-
+        
         aggregated_alphas = (weights * stacked_alphas).sum(dim=0)
         aggregated_alphas = torch.clamp(aggregated_alphas, min=self.eps)
         return aggregated_alphas

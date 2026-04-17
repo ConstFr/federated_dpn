@@ -4,8 +4,11 @@ defaults:
 
 device: auto
 
+partition_strategy: "iid"
+
 dataset:
   name: mnist_fashionmnist
+  # name: cifar10_fashionmnist
   data_path: ./data
   normalize: true
 

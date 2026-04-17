@@ -8,31 +8,33 @@ from torchvision import datasets, transforms
 logger = logging.getLogger(__name__)
 
 
-def make_mnist_fashionmnist_datasets(data_path="./data", normalize=True, train_subset_size=None):
+def make_cifar10_fashionmnist_dataset(data_path="./data", normalize=True, train_subset_size=None):
     if normalize:
-        mean = (0.1307,)
-        std = (0.3081,)
+        cifar10_mean = (0.4914, 0.4822, 0.4465)
+        cifar10_std = (0.2470, 0.2435, 0.2616)
     else:
-        mean = (0.5,)
-        std = (0.5,)
+        cifar10_mean = (0.5, 0.5, 0.5)
+        cifar10_std = (0.5, 0.5, 0.5)
 
     train_transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize(mean, std),
+        transforms.Normalize(cifar10_mean, cifar10_std),
     ])
     eval_transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize(mean, std),
+        transforms.Normalize(cifar10_mean, cifar10_std),
     ])
     ood_transform = transforms.Compose([
+        transforms.Resize((32, 32)),
+        transforms.Grayscale(num_output_channels=3),
         transforms.ToTensor(),
-        transforms.Normalize(mean, std),
+        transforms.Normalize(cifar10_mean, cifar10_std),
     ])
 
-    train_dataset = datasets.MNIST(root=data_path, train=True, transform=train_transform, download=True)
-    val_dataset = datasets.MNIST(root=data_path, train=False, transform=eval_transform, download=True)
+    train_dataset = datasets.CIFAR10(root=data_path, train=True, transform=train_transform, download=True)
+    val_dataset = datasets.CIFAR10(root=data_path, train=False, transform=eval_transform, download=True)
     ood_train_dataset = datasets.FashionMNIST(root=data_path, train=True, transform=ood_transform, download=True)
-    ood_val_dataset = datasets.FashionMNIST(root=data_path, train=False, transform=eval_transform, download=True)
+    ood_val_dataset = datasets.FashionMNIST(root=data_path, train=False, transform=ood_transform, download=True)
 
     logger.info(f"Initial train dataset length: {len(train_dataset)}")
     

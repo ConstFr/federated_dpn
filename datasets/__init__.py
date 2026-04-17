@@ -1,2 +1,3 @@
 from .mnist_fashionmnist import make_mnist_fashionmnist_datasets
 
+from .cifar10_fashionmnist import make_cifar10_fashionmnist_dataset

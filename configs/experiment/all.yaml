@@ -1,0 +1,12 @@
+num_clients: 5
+local_epochs: 5
+batch_size: 32
+lr: 0.001
+
+train_subset_size: 15000
+num_runs: 5
+
+aggregation_type: "all"
+aggregation_uncertainty_measure: "none"
+
+random_seed: 337

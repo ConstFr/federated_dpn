@@ -141,8 +141,10 @@ class TrainerWithOOD:
                 logger.info("=" * 75)
                 logger.info("Final evaluation")
                 logger.info("=" * 75)
-                self.test(time=time.time() - start)
+                last_test_results = self.test(time=time.time() - start)
             self.scheduler.step()
+        
+        return last_test_results
 
     def _train_single_epoch(self):
         self.model.train()
@@ -264,6 +266,15 @@ class TrainerWithOOD:
         self.test_loss.append(id_loss)
         self.test_accuracy.append(accuracy)
         self.test_eval_steps.append(self.steps)
+
+        return {
+            "accuracy": float(np.round(100.0 * accuracy, 1)),
+            "id_loss": np.round(id_loss, 1),
+            "ood_loss": np.round(ood_loss, 1),
+            "id_precision": np.round(id_alpha_0, 1),
+            "ood_precision": np.round(ood_alpha_0, 1),
+            "auroc": np.round(100.0 * auc, 1),
+        }
 
 
 def calc_accuracy_torch(y_probs, y_true, device=None, weights=None):

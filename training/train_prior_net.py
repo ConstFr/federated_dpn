@@ -85,6 +85,5 @@ def train_dpn(
         clip_norm=clip_norm,
     )
 
-    trainer.train(n_epochs, test=test)
-    return trainer.model
-
+    test_results = trainer.train(n_epochs, test=test)
+    return trainer.model, test_results

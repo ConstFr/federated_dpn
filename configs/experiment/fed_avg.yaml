@@ -1,9 +1,11 @@
 federated_learning_type: "fed_avg"
-num_rounds: 3
-num_clients: 3
+num_rounds: 5
+num_clients: 5
 local_epochs: 1
 batch_size: 32
 lr: 0.001
+
+num_runs: 5
 
 train_subset_size: 15000
 

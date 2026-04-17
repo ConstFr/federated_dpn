@@ -76,3 +76,11 @@ def evaluate_accuracy(
         f"Test AUROC: {np.round(100.0 * auc, 1)}\n"
     )
     return accuracy * 100.0
+
+
+def form_report(local_metrics, aggregated_test_accuracy):
+    
+    return {
+        "best_local_test_accuracy": max(m["accuracy"] for m in local_metrics), 
+        "aggregated_test_accuracy": aggregated_test_accuracy
+    }

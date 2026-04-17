@@ -3,18 +3,46 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class SimpleCNN(nn.Module):
-    """Prior network with CNN backbone for MNIST-like classification."""
+class MNISTSimpleCNN(nn.Module):
+    """CNN backbone for MNIST-like classification."""
 
     def __init__(self, num_classes: int = 10):
         super().__init__()
-        self.conv1 = nn.Conv2d(1, 32, 3, padding=1)
-        self.conv2 = nn.Conv2d(32, 64, 3, padding=1)
-        self.conv3 = nn.Conv2d(64, 64, 3, padding=1)
+        self.conv1 = nn.Conv2d(1, 2, 3, padding=1)
+        self.conv2 = nn.Conv2d(2, 4, 3, padding=1)
+        self.conv3 = nn.Conv2d(4, 4, 3, padding=1)
         self.pool = nn.MaxPool2d(2, 2)
         
-        self.fc1 = nn.Linear(64 * 3 * 3, 512)
-        self.fc2 = nn.Linear(512, num_classes)
+        self.fc1 = nn.Linear(4 * 3 * 3, 32)
+        self.fc2 = nn.Linear(32, num_classes)
+
+        self.dropout = nn.Dropout(0.25)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = self.pool(F.relu(self.conv3(x)))
+
+        x = x.view(-1, 4 * 3 * 3)
+        x = F.relu(self.fc1(x))
+        x = self.dropout(x)
+        x = self.fc2(x)
+
+        return x
+
+
+class CIFAR10SimpleCNN(nn.Module):
+    """CNN backbone for CIFAR-10-like classification."""
+
+    def __init__(self, num_classes: int = 10):
+        super().__init__()
+        self.conv1 = nn.Conv2d(3, 32, 3, padding=1)
+        self.conv2 = nn.Conv2d(32, 64, 3, padding=1)
+        self.conv3 = nn.Conv2d(64, 128, 3, padding=1)
+        self.pool = nn.MaxPool2d(2, 2)
+        
+        self.fc1 = nn.Linear(128 * 4 * 4, 256)
+        self.fc2 = nn.Linear(256, num_classes)
 
         self.dropout = nn.Dropout(0.5)
 
@@ -23,7 +51,7 @@ class SimpleCNN(nn.Module):
         x = self.pool(F.relu(self.conv2(x)))
         x = self.pool(F.relu(self.conv3(x)))
 
-        x = x.view(-1, 64 * 3 * 3)
+        x = x.view(-1, 128 * 4 * 4)
         x = F.relu(self.fc1(x))
         x = self.dropout(x)
         x = self.fc2(x)
@@ -72,7 +100,7 @@ class PriorNet(nn.Module):
     def epkl(self, x):
         alphas = self.alphas(x)
         alpha0 = torch.sum(alphas, dim=1, keepdim=True)
-        return alphas.size()[1] / alpha0
+        return torch.squeeze((alphas.shape[1] - 1.0) / alpha0)
 
     def confidence(self, x):
         return torch.max(F.softmax(self.forward(x), dim=-1), dim=1).values
@@ -93,7 +121,7 @@ class PriorNet(nn.Module):
             "expected_entropy": self.expected_entropy(x),
             "mutual_information": self.mutual_information(x),
             "EPKL": self.epkl(x),
-            "differential_entropy": self.differential_entropy(x),
+            "differential_entropy": self.differential_entropy(x).squeeze(),
         }
 
 
